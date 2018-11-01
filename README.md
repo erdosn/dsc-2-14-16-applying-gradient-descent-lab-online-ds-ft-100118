@@ -50,6 +50,11 @@ y = 3 + 50* x + y_randterm
 data = np.array([y, x]) # data = y, x
 data = np.transpose(data)
 
+
+# data = [y, x1, x2, x3, ..., xn]
+# y = data[0]
+# x_vec = data[1::]
+
 plt.plot(x, y, '.b')
 plt.xlabel("x", fontsize=14)
 plt.ylabel("y", fontsize=14)
@@ -79,15 +84,15 @@ update_to_m = 0 # set this variable, we will actually calculate it later
 
 # Define the error_at function
 def error_at(point, m, b):
-    return point[0] - (m*point[1] + b)
+    return point[0] - (m*point[1] + b) # y - yhat 
 
 # iterate through data to change update_to_b and update_to_m
 for point in data:
     # update to m = -2x*epsilon
-    update_to_m += -2*point[1]*error_at(point, m_current, b_current)
+    update_to_m += -2*point[1]*error_at(point, m_current, b_current) # -2x(y-yhat)
     
     # update to b = -2*epsilon
-    update_to_b += -2*error_at(point, m_current, b_current)
+    update_to_b += -2*error_at(point, m_current, b_current) # -2(y-yhat)
 
 # Create new_b and new_m by subtracting the updates from the current estimates
 new_m = m_current - update_to_m
@@ -299,14 +304,15 @@ So we'll have one gradient per predictor along with the gradient for the interce
 
 
 ```python
+# y - yhat (y - m1mx2 - m2x2 - b)
 def general_error_at(point, m, b):
     """
-    Formula for epsilon = y - (m*x_vec + b)
-                        = y - (m*x1 + m*x2 + ... m*xn + b)
-                        = y - (sum(m*xvec) + b)
+    Formula for epsilon = y - (m_vec*x_vec + b)
+                        = y - (m1*x1 + m2*x2 + ... mn*xn + b)
+                        = y - (sum(m_vec*xvec) + b)
     Input
     points: array of points (y, x1, x2, ..., xn)
-    m: current_slope
+    m: current_slopes 
     b: current_intercept
     
     return
@@ -332,8 +338,8 @@ def step_gradient_general(b_current, m_current ,points, learning_rate=0.1):
         # update_to_b = -epsilon (from above, except removing the 2)
         y = point[0]
         x_vec = point[1::]
-        update_to_b += -general_error_at(point, m, b)
-        update_to_m += -x_vec*general_error_at(point, m, b)
+        update_to_b += -general_error_at(point, m, b) # -epsilon
+        update_to_m += -x_vec*general_error_at(point, m, b) # -x*epsilon
     
     # update b_current and m_current
     b_current -= learning_rate*update_to_b/n
@@ -352,7 +358,7 @@ b, m
 
 
 
-    (0.12169702581701201, array([0.084077, 0.028993]))
+    (-0.3773393509149988, array([-0.184880, -0.253425]))
 
 
 
