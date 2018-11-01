@@ -34,6 +34,8 @@ Now the formulas above tell us to take some dataset, with values of $x$ and $y$,
 
 Ok let's turn this into code.  First, let's initialize our data like we did before:
 
+# Notice in data x and y are flipped data = [y, x]
+
 
 ```python
 import numpy as np
@@ -45,13 +47,18 @@ x = np.random.rand(30, 1).reshape(30)
 y_randterm = np.random.normal(0,3,30)
 y = 3 + 50* x + y_randterm
 
-data = np.array([y, x])
+data = np.array([y, x]) # data = y, x
 data = np.transpose(data)
 
 plt.plot(x, y, '.b')
 plt.xlabel("x", fontsize=14)
-plt.ylabel("y", fontsize=14);
+plt.ylabel("y", fontsize=14)
+plt.show()
 ```
+
+
+![png](index_files/index_15_0.png)
+
 
 Now
 
@@ -63,21 +70,37 @@ Now
 
 ```python
 # initial variables of our regression line
-
+m_current = 0 
+b_current = 0
 
 #amount to update our variables for our next step
-
+update_to_b = 0 # set this variable, we will actually calculate it later
+update_to_m = 0 # set this variable, we will actually calculate it later
 
 # Define the error_at function
-
+def error_at(point, m, b):
+    return point[0] - (m*point[1] + b)
 
 # iterate through data to change update_to_b and update_to_m
-
+for point in data:
+    # update to m = -2x*epsilon
+    update_to_m += -2*point[1]*error_at(point, m_current, b_current)
+    
+    # update to b = -2*epsilon
+    update_to_b += -2*error_at(point, m_current, b_current)
 
 # Create new_b and new_m by subtracting the updates from the current estimates
-
-
+new_m = m_current - update_to_m
+new_b = b_current - update_to_b
+new_m, new_b
 ```
+
+
+
+
+    (1243.7171547903115, 1815.0185037502683)
+
+
 
 In the last two lines of the code above, we calculate our `new_b` and `new_m` values by updating our taking our current values and adding our respective updates.  We define a function called `error_at`, which we can use in the error component of our partial derivatives above.
 
@@ -99,18 +122,33 @@ Make these changes below:
 
 ```python
 #amount to update our variables for our next step
-
+update_to_m = 0
+update_to_b = 0
 
 # define learning rate and n
-
+learning_rate = 0.01
+n = len(data)
 
 # create update_to_b and update_to_m
-
+for point in data:
+    # update to m = -x*epsilon
+    update_to_m += -point[1]*error_at(point, m_current, b_current) #remove the 2 just do it to both
+    
+    # update to b = -epsilon
+    update_to_b += -error_at(point, m_current, b_current) # remove the 2
     
 # create new_b and new_m
-
-
+new_m = m_current - learning_rate*update_to_m/n  # divide by n and multiply by learning rate
+new_b = b_current - learning_rate*update_to_b/n  # divide by n and multiply by learning rate
+new_m, new_b
 ```
+
+
+
+
+    (0.20728619246505192, 0.30250308395837805)
+
+
 
 So our code now reflects what we know about our gradient descent process.  Start with an initial regression line with values of $m$ and $b$.  Then for each point, calculate how the regression line fares against the actual point (that is, find the error).  Update what our next step to the respective variable should be using by using the partial derivative.  And after iterating through all of the points, update the value of $b$ and $m$ appropriately, scaled down by a learning rate.
 
@@ -123,34 +161,63 @@ As mentioned earlier, the code above represents just one update to our regressio
 
 
 ```python
-def step_gradient(b_current, m_current, points):
-    pass
+# I added, learning rate as a parameter so I can play around with it, but it's optional
+# remember points are (y, x) and not (x, y)
+
+def step_gradient(b_current, m_current, points, learning_rate=0.1): 
+    # if you don't want to include as parameter, you must set it here
+    # learning_rate = 0.01 
+    
+    # set n
+    n = len(points)
+    
+    # initalize update_to_b and update_to_m
+    update_to_b, update_to_m = 0, 0
+    
+    # get update_to_ variables
+    for point in points:
+        # update_to_b = -epsilon
+        update_to_b += -error_at(point, m_current, b_current)
+        
+        # update_to_m = -x*epsilon
+        update_to_m += -point[1]*error_at(point, m_current, b_current)
+    
+    # reset m_current and b_current
+    b_current -= learning_rate*update_to_b/n
+    m_current -= learning_rate*update_to_m/n
+    return b_current, m_current
 ```
 
 Now let's initialize `b` and `m` as 0 and run a first iteration of the `step_gradient` function.
 
 
 ```python
-
+b, m = 0, 0
+b, m = step_gradient(b, m, data)
+b, m
 # b= 3.02503, m= 2.07286
 ```
 
-    3.0250308395837813
-    2.0728619246505193
+
+
+
+    (3.0250308395837804, 2.0728619246505193)
+
 
 
 So just looking at input and output, we begin by setting $b$ and $m$ to 0 amnd 0.  Then from our step_gradient function, we receive new values of $b$ and $m$ of 3.02503 and 2.0728.  Now what we need to do, is take another step in the correct direction by calling our step gradient function with our updated values of $b$ and $m$.
 
 
 ```python
-
+b, m = step_gradient(b, m, data)
+b,m
 # b = 5.63489, m= 3.902265
 ```
 
 
 
 
-    (5.634896312558807, 3.902265648903966)
+    (5.634896312558805, 3.9022656489039664)
 
 
 
@@ -159,7 +226,18 @@ Let's do this, say, 1000 times.
 
 ```python
 # create a for loop to do this
+b, m = 0, 0
+for step in range(1000):
+    b, m = step_gradient(b, m, data)
+b, m
 ```
+
+
+
+
+    (3.1619764855577257, 49.84313430300858)
+
+
 
 Let's take a look at the estimates in the last iteration.
 
@@ -206,7 +284,7 @@ ax2.plot(x2, y, '.b');
 ```
 
 
-![png](index_files/index_38_0.png)
+![png](index_files/index_39_0.png)
 
 
 Create `step_gradient` function below
@@ -221,13 +299,79 @@ So we'll have one gradient per predictor along with the gradient for the interce
 
 
 ```python
-def step_gradient(b_current, m_current ,points):
-    pass
+def general_error_at(point, m, b):
+    """
+    Formula for epsilon = y - (m*x_vec + b)
+                        = y - (m*x1 + m*x2 + ... m*xn + b)
+                        = y - (sum(m*xvec) + b)
+    Input
+    points: array of points (y, x1, x2, ..., xn)
+    m: current_slope
+    b: current_intercept
+    
+    return
+    epsilon
+    """
+    epsilon = point[0] - (np.sum(m*point[1::]) + b)
+    return epsilon
+
+def step_gradient_general(b_current, m_current ,points, learning_rate=0.1):
+    # must initialize learning rate here if you didn't add as parameter
+    # learning_rate = 0.1
+    
+    # initalize update_to variables
+    update_to_b, update_to_m = 0, 0
+    
+    # length of points
+    n = len(points)
+    
+    # points are (y, x1, x2)
+    # loop to calculate updates
+    
+    for point in points:
+        # update_to_b = -epsilon (from above, except removing the 2)
+        y = point[0]
+        x_vec = point[1::]
+        update_to_b += -general_error_at(point, m, b)
+        update_to_m += -x_vec*general_error_at(point, m, b)
+    
+    # update b_current and m_current
+    b_current -= learning_rate*update_to_b/n
+    m_current -= learning_rate*update_to_m/n
+    return b_current, m_current
 ```
 
 Apply 1 step to our data
 
+
+```python
+b, m = step_gradient_general(0, 0, data)
+b, m
+```
+
+
+
+
+    (0.12169702581701201, array([0.084077, 0.028993]))
+
+
+
 Apply 500 steps to our data
+
+
+```python
+b, m = 0, 0
+for step in range(500):
+    b, m = step_gradient_general(b, m, data)
+b, m
+```
+
+
+
+
+    (1.9444283324428657, array([2.995890, -3.911055]))
+
+
 
 Look at the last step
 
